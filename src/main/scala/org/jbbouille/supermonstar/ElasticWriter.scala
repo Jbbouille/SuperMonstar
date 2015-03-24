@@ -10,6 +10,6 @@ object ElasticWriter {
 
 case class ElasticWriter(implicit inj: Injector) extends Actor with ActorLogging with AkkaInjectable {
   def receive: Receive = {
-    case "" => println()
+    case m: Music=> println(m)
   }
 }

@@ -1,21 +1,21 @@
 package org.jbbouille.supermonstar
 
+import java.nio.file.{Paths, Path}
 import com.typesafe.config.Config
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import akka.event.Logging
 import akka.routing.SmallestMailboxPool
 import scaldi.Module
 import scaldi.akka.AkkaInjectable
 
-case class Initializor(config: Config) extends Actor with AkkaInjectable {
-
-  val log = Logging(context.system, Initializor)
+case class Initializor(config: Config) extends Actor with AkkaInjectable with ActorLogging{
 
   def receive: Receive = {
-    case _ => log.warning("Initializor Actor shouldn't receive any message even {}", _)
+    case _ => log.warning("Initializor Actor shouldn't receive any message")
   }
 
   val nbWorkersInPool = config.getInt("parameter.actor.nbWorkersInPool")
+  val directoryRoot = config.getString("parameter.directoryRoot")
 
   @throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
@@ -40,5 +40,7 @@ case class Initializor(config: Config) extends Actor with AkkaInjectable {
     musicMaker = context.actorOf(SmallestMailboxPool(nbWorkersInPool).props(Props(classOf[MusicMaker], actorModule)), "musicMaker")
     sprayRouter = context.actorOf(SmallestMailboxPool(nbWorkersInPool).props(Props(classOf[SprayRouter], actorModule)), "sprayRouter")
     elasticReader = context.actorOf(SmallestMailboxPool(nbWorkersInPool).props(Props(classOf[ElasticReader], actorModule)), "elasticReader")
+
+    dirWalker ! Directory(Paths.get(directoryRoot))
   }
 }

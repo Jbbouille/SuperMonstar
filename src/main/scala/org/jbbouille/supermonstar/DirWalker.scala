@@ -14,23 +14,25 @@ case class DirWalker(implicit inj: Injector) extends Actor with ActorLogging wit
 
   private val musicMaker = inject[ActorRef]('musicMaker)
   private val dirWalker = inject[ActorRef]('dirWalker)
-  private val EXTENSION = "*.{mp3,wav,ogg}"
+  private val EXTENSION = "glob:*.{mp3,wav,ogg,flac,aiff,wma}"
   private val pathMusicMatcher = FileSystems.getDefault().getPathMatcher(EXTENSION)
 
   private def checkExtension(path: Path): Boolean = {
-    if(pathMusicMatcher.matches(path)) true
+    if (pathMusicMatcher.matches(path.getFileName)) true
     else false
   }
 
   private def findPathOfMusic(path: Path): Unit = {
-    Files.newDirectoryStream(path).foreach { file =>
+    val newDirectoryStream = Files.newDirectoryStream(path)
+    newDirectoryStream.foreach { file =>
       if (Files.isDirectory(file)) dirWalker ! Directory(file)
-      else if (checkExtension(file)) musicMaker ! Track(file)
+      else if (checkExtension(file)) musicMaker ! Link(file)
     }
+    newDirectoryStream.close()
   }
 
   def receive: Receive = {
     case Directory(path) => findPathOfMusic(path)
-    case _ => log.warning("DirWalker shouldn't receive message {}", _)
+    case _ => log.warning(s"DirWalker can receive only message of type Directory")
   }
 }
