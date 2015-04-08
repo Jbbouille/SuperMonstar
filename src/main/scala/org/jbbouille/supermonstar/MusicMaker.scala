@@ -1,14 +1,9 @@
 package org.jbbouille.supermonstar
 
-import java.io.FileInputStream
-import java.nio.file.{Files, Path}
-import org.apache.tika.config.TikaConfig
-import org.apache.tika.detect.Detector
-import org.apache.tika.io.TikaInputStream
-import org.apache.tika.io.TikaInputStream._
-import org.apache.tika.metadata.{Metadata, TikaCoreProperties}
-import org.apache.tika.parser.{AutoDetectParser, ParseContext}
-import org.apache.tika.sax.BodyContentHandler
+import java.nio.file.Path
+import java.util.logging.{Level, Logger}
+import org.jaudiotagger.audio.{AudioFileIO, AudioHeader}
+import org.jaudiotagger.tag.{FieldKey, Tag}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import scaldi.Injector
 import scaldi.akka.AkkaInjectable
@@ -18,6 +13,7 @@ object MusicMaker {
 }
 
 case class MusicMaker(implicit inj: Injector) extends Actor with ActorLogging with AkkaInjectable {
+  Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF)
 
   val elasticWriter = inject[ActorRef]('elasticWriter)
 
@@ -27,40 +23,20 @@ case class MusicMaker(implicit inj: Injector) extends Actor with ActorLogging wi
   }
 
   def createMusic(path: Path): Unit = {
-    val tika = new TikaConfig()
-    val detector: Detector = tika.getDetector
-    val fileStream = TikaInputStream.get(Files.newInputStream(path))
-    if (isAudioType(fileStream, path, detector)) {
-      val metadata = extractMetaData(fileStream, path, detector)
-      elasticWriter ! toMusic(metadata, path)
-    }
+    val f = AudioFileIO.read(path.toFile)
+    elasticWriter ! toMusic(f.getTag(), f.getAudioHeader(), path)
   }
 
-  def extractMetaData(tikaInputStream: TikaInputStream, path: Path, detector: Detector): Metadata = {
-    val parser = new AutoDetectParser()
-    val metadata = new Metadata()
-    parser.parse(tikaInputStream, new BodyContentHandler(), metadata, new ParseContext())
-    tikaInputStream.close()
-    metadata
-  }
-
-  def isAudioType(fileStream: TikaInputStream, path: Path, detector: Detector): Boolean = {
-    val metadata = new Metadata()
-    metadata.add(TikaCoreProperties.TYPE, path.toString)
-    detector.detect(get(new FileInputStream(path.toFile)), metadata).getType.equals("audio")
-  }
-
-  def toMusic(metadata: Metadata, path: Path): Music = {
-    Music(path,
-      optionizeMetadata(metadata.get("xmpDM:genre")),
-      optionizeMetadata(metadata.get("creator")),
-      optionizeMetadata(metadata.get("xmpDM:album")),
-      optionizeMetadata(metadata.get("xmpDM:trackNumber")),
-      optionizeMetadata(metadata.get("xmpDM:releaseDate")),
-      optionizeMetadata(metadata.get("dc:title"))
+  def toMusic(tag: Tag, audioHeader: AudioHeader, path: Path): Music = {
+    new Music(path,
+      tag.getFirst(FieldKey.GENRE),
+      tag.getFirst(FieldKey.ARTIST),
+      tag.getFirst(FieldKey.COMPOSER),
+      tag.getFirst(FieldKey.ALBUM),
+      tag.getFirst(FieldKey.TRACK),
+      tag.getFirst(FieldKey.YEAR),
+      tag.getFirst(FieldKey.TITLE),
+      audioHeader.getTrackLength.toString
     )
   }
-
-  def optionizeMetadata(metadata: String): Option[String] =
-    Option(metadata).filter(_.trim.nonEmpty)
 }

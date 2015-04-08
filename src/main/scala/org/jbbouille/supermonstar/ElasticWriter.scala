@@ -1,6 +1,7 @@
 package org.jbbouille.supermonstar
 
-import akka.actor.{Props, ActorLogging, Actor}
+import org.elasticsearch.client.Client
+import akka.actor.{Actor, ActorLogging, Props}
 import scaldi.Injector
 import scaldi.akka.AkkaInjectable
 
@@ -9,7 +10,14 @@ object ElasticWriter {
 }
 
 case class ElasticWriter(implicit inj: Injector) extends Actor with ActorLogging with AkkaInjectable {
+
+  val clientEs = inject[Client]('clientEs)
+
+  def insertInElastic(music: Music): Unit = {
+    clientEs.prepareIndex("musicbank", "music", music.id).setSource(music.toJs).execute()
+  }
+
   def receive: Receive = {
-    case m: Music=> println(m)
+    case m: Music => insertInElastic(m)
   }
 }

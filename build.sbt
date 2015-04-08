@@ -14,10 +14,8 @@ libraryDependencies ++= Seq(
   "org.scaldi" %% "scaldi-akka" % "0.5.3",
   "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test",
   "ch.qos.logback" % "logback-classic" % "1.0.13",
-  "org.apache.tika" % "tika-core" % "1.7" exclude("org.gagravarr", "vorbis-java-tika") exclude("org.gagravarr", "vorbis-java-core") ,
-  "org.apache.tika" % "tika-parsers" % "1.7" exclude("org.gagravarr", "vorbis-java-tika") exclude("org.gagravarr", "vorbis-java-core") ,
-  "org.gagravarr" % "vorbis-java-tika" % "0.7" intransitive(),
-  "org.gagravarr" % "vorbis-java-core" % "0.7" intransitive()
+  "org.elasticsearch" % "elasticsearch" % "1.5.0",
+  "org" % "jaudiotagger" % "2.0.3"
 )
 
 Revolver.settings
