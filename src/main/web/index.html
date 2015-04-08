@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+</head>
+<body ng-app="ExampleApp">
+<!-- attach the ExampleController to our main content -->
+<div ng-controller="ExampleController2" class="container">
+    <h1>Angular + Elasticsearch</h1>
+
+    <!-- if there is an error, display its message -->
+    <div ng-if="error" class="alert alert-danger" role="alert">{{error.message}}</div>
+
+    <!-- if clusterState is available, display it as formatted json -->
+    <div ng-if="clusterState" class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">Cluster State</h3>
+        </div>
+        <div class="panel-body">
+            <pre>{{clusterState | json}}</pre>
+        </div>
+    </div>
+</div>
+<script src="bower_components/angular/angular.js"></script>
+<script src="bower_components/elasticsearch/elasticsearch.angular.js"></script>
+
+<script>
+    angular.module('ExampleApp', ['elasticsearch']);
+
+    angular.module('ExampleApp').service('client', function (esFactory) {
+        return esFactory({
+            host: 'localhost:9200',
+            apiVersion: '1.5',
+            log: 'trace'
+        });
+    });
+
+    angular.module('ExampleApp').controller('ExampleController2', function ($scope, client, esFactory) {
+        client.cluster.state({
+            metric: [
+                'cluster_name',
+                'nodes',
+                'master_node',
+                'version'
+            ]
+        })
+                .then(function (resp) {
+                    $scope.clusterState = resp;
+                    $scope.error = null;
+                })
+                .catch(function (err) {
+                    $scope.clusterState = null;
+                    $scope.error = err;
+
+                    if (err instanceof esFactory.errors.NoConnections) {
+                        $scope.error = new Error('Unable to connect to elasticsearch. ' +
+                        'Make sure that it is running and listening at http://localhost:9200');
+                    }
+                });
+    });
+</script>
+</body>
+</html>
