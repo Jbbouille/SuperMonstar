@@ -6,8 +6,10 @@ sealed trait Message
 
 sealed trait Jsonable {
   def toJs: String
+  def id: String
 }
 
+case class Search() extends Message
 case class Directory(path: Path) extends Message
 case class Link(path: Path) extends Message
 case class Music(uri: Path, genre: String, artist: String, composer: String, album: String, track: String, date: String, title: String, length: String) extends Message with Jsonable {

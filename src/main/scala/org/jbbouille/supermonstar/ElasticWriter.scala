@@ -13,7 +13,7 @@ case class ElasticWriter(implicit inj: Injector) extends Actor with ActorLogging
 
   val clientEs = inject[Client]('clientEs)
 
-  def insertInElastic(music: Music): Unit = {
+  def insertInElastic(music: Jsonable): Unit = {
     clientEs.prepareIndex("musicbank", "music", music.id).setSource(music.toJs).execute()
   }
 

@@ -15,7 +15,7 @@ case class DirWalker(implicit inj: Injector) extends Actor with ActorLogging wit
   private val musicMaker = inject[ActorRef]('musicMaker)
   private val dirWalker = inject[ActorRef]('dirWalker)
   private val EXTENSION = "glob:*.{mp3,wav,ogg,flac,aiff,wma}"
-  private val pathMusicMatcher = FileSystems.getDefault().getPathMatcher(EXTENSION)
+  private val pathMusicMatcher = FileSystems.getDefault.getPathMatcher(EXTENSION)
 
   private def checkExtension(path: Path): Boolean = {
     if (pathMusicMatcher.matches(path.getFileName)) true
