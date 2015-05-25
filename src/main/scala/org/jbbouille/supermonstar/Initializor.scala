@@ -16,6 +16,7 @@ import akka.util.Timeout
 import scaldi.Module
 import scaldi.akka.AkkaInjectable
 import spray.can.Http
+import scala.reflect._
 
 case class Initializor(config: Config, implicit val system: ActorSystem) extends Actor with AkkaInjectable with ActorLogging {
 
@@ -91,8 +92,8 @@ case class Initializor(config: Config, implicit val system: ActorSystem) extends
 
     val modules = actorModule :: configModule
 
-    def props[T] = {
-      SmallestMailboxPool(nbWorkersInPool).props(Props(classOf[T], modules))
+    def props[T: ClassTag] = {
+      SmallestMailboxPool(nbWorkersInPool).props(Props(classTag[T].runtimeClass, modules))
     }
 
     dirWalker = context.actorOf(props[DirWalker], "dirWalker")
